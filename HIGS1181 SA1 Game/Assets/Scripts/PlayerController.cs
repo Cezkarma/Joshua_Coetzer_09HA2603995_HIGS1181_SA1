@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -17,6 +18,10 @@ public class PlayerController : MonoBehaviour
     [Header("Layer Masks")]
     public LayerMask blockingLayer; // Assign the Wall layer here
     public LayerMask enemyLayer;    // Assign the Enemy layer here
+
+    [Header("UI")]
+    [Tooltip("Drag a child GameObject's TextMeshPro (non-UI) component here to show remaining HP.")]
+    public TextMeshPro hpLabel;
 
     // ── Cached components (global to this class) ─────────────
     private Rigidbody2D rb2D;
@@ -145,5 +150,15 @@ public class PlayerController : MonoBehaviour
     public void EnableInput(bool enable)
     {
         inputEnabled = enable;
+    }
+
+    /// <summary>
+    /// Updates the world-space HP label above the player.
+    /// Called by GameManager whenever the player's HP changes.
+    /// </summary>
+    public void UpdateHPLabel(int current, int max)
+    {
+        if (hpLabel != null)
+            hpLabel.text = current.ToString();
     }
 }

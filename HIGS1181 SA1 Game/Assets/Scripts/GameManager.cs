@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
         playerCurrentHP = playerMaxHP;
         CountEnemies();
         RefreshUI();
+        player.UpdateHPLabel(playerCurrentHP, playerMaxHP);
 
         Debug.Log("Game started. Enemies: " + enemiesRemaining +
                   " | Player HP: " + playerCurrentHP);
@@ -130,6 +131,7 @@ public class GameManager : MonoBehaviour
         playerCurrentHP -= damage;
         playerCurrentHP = Mathf.Max(playerCurrentHP, 0); // clamp at zero
         uiManager.UpdateHP(playerCurrentHP, playerMaxHP);
+        player.UpdateHPLabel(playerCurrentHP, playerMaxHP);
         Debug.Log("Enemy Attacked Player. Player HP: " + playerCurrentHP);
 
         if (IsPlayerDead())
