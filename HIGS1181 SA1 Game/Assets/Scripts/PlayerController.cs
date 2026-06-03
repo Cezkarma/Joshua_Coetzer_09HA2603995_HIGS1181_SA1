@@ -25,6 +25,14 @@ public class PlayerController : MonoBehaviour
     // ── Local state ──────────────────────────────────────────
     private bool inputEnabled = false;
 
+    /// <summary>
+    /// The player's logical grid position.
+    /// Updated immediately when the player moves – before Unity's physics
+    /// system processes the MovePosition call – so other scripts (e.g.
+    /// EnemyAI) can read the correct destination in the same frame.
+    /// </summary>
+    public Vector2 GridPosition { get; private set; }
+
     // ── Unity Lifecycle ──────────────────────────────────────
 
     private void Awake()
@@ -32,6 +40,9 @@ public class PlayerController : MonoBehaviour
         // GetComponent<> – cache references once on startup
         rb2D  = GetComponent<Rigidbody2D>();
         col2D = GetComponent<BoxCollider2D>();
+
+        // Seed GridPosition from the starting transform position
+        GridPosition = transform.position;
     }
 
     private void Update()
@@ -95,7 +106,10 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Tile is clear – move the player one tile
+        // Tile is clear – commit the logical position immediately so that
+        // EnemyAI can read GridPosition correctly this same frame, then
+        // hand the visual move off to the physics system.
+        GridPosition = targetPos;
         rb2D.MovePosition(targetPos);
         Debug.Log("Player moved to " + targetPos);
 

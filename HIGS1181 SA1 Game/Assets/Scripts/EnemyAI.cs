@@ -44,8 +44,9 @@ public class EnemyAI : MonoBehaviour
     private Rigidbody2D rb2D;
     private BoxCollider2D col2D;
 
-    // Cached player transform – found once in Start
+    // Cached player references – found once in Start
     private Transform playerTransform;
+    private PlayerController playerController;
 
     // ── Unity Lifecycle ──────────────────────────────────────
 
@@ -61,9 +62,16 @@ public class EnemyAI : MonoBehaviour
         // Locate the player once by tag (set player GameObject tag to "Player")
         GameObject playerObj = GameObject.FindWithTag("Player");
         if (playerObj != null)
-            playerTransform = playerObj.transform;
+        {
+            playerTransform  = playerObj.transform;
+            // Cache PlayerController so we can read GridPosition – the
+            // logically-correct position that updates before physics does.
+            playerController = playerObj.GetComponent<PlayerController>();
+        }
         else
+        {
             Debug.LogWarning("EnemyAI: No GameObject tagged 'Player' found in scene.");
+        }
     }
 
     // ── Turn Logic (MODIFIED) ────────────────────────────────
@@ -110,12 +118,39 @@ public class EnemyAI : MonoBehaviour
             targetPos = altTarget;
         }
 
-        // Move one tile toward the player, respecting the grid
+        // Don't step onto the player's tile – attack from the adjacent tile instead.
+        // This prevents the enemy and player from ever sharing the same position.
+        Collider2D playerAtTarget = Physics2D.OverlapBox(
+            targetPos, Vector2.one * 0.8f, 0f, playerLayer);
+
+        if (playerAtTarget != null)
+        {
+            Debug.Log("Enemy target tile occupied by player – attacking instead of moving.");
+            AttackPlayer();
+            return;
+        }
+
+        // Tile is clear of both walls and the player – move one step closer
         rb2D.MovePosition(targetPos);
         Debug.Log("Enemy moved toward player to " + targetPos);
     }
 
     // ── Custom Methods ───────────────────────────────────────
+
+    /// <summary>
+    /// Returns the player's current logical grid position.
+    /// Reads PlayerController.GridPosition when available – this value is
+    /// updated the moment the player commits a move, before Unity's physics
+    /// step runs, so it is always correct even within the same frame.
+    /// Falls back to transform.position if the component is missing.
+    /// </summary>
+    private Vector2 GetPlayerPosition()
+    {
+        if (playerController != null)
+            return playerController.GridPosition;
+
+        return playerTransform.position;
+    }
 
     /// <summary>
     /// Returns the single-tile direction (horizontal OR vertical) that
@@ -125,8 +160,9 @@ public class EnemyAI : MonoBehaviour
     private Vector2 GetDirectionToPlayer()
     {
         // Local variables – distance on each axis
-        float dx = playerTransform.position.x - rb2D.position.x;
-        float dy = playerTransform.position.y - rb2D.position.y;
+        Vector2 playerPos = GetPlayerPosition();
+        float dx = playerPos.x - rb2D.position.x;
+        float dy = playerPos.y - rb2D.position.y;
 
         // Move along the axis with the greater gap (no diagonal movement)
         if (Mathf.Abs(dx) >= Mathf.Abs(dy))
@@ -138,11 +174,13 @@ public class EnemyAI : MonoBehaviour
     /// <summary>
     /// Returns true when the player is exactly one tile away (Manhattan
     /// distance ≤ 1), indicating the enemy should attack rather than move.
+    /// Uses GridPosition so the check is accurate in the same frame the
+    /// player moves.
     /// </summary>
     private bool IsAdjacentToPlayer()
     {
         // Local distance variable – Manhattan distance on a grid
-        float dist = Vector2.Distance(rb2D.position, playerTransform.position);
+        float dist = Vector2.Distance(rb2D.position, GetPlayerPosition());
         return dist <= 1.1f; // 1.0 = one tile, small tolerance for float precision
     }
 
@@ -153,8 +191,9 @@ public class EnemyAI : MonoBehaviour
     private Vector2 GetPerpendicularDirection(Vector2 primary)
     {
         // Local variables for axis-flip calculation
-        float dx = playerTransform.position.x - rb2D.position.x;
-        float dy = playerTransform.position.y - rb2D.position.y;
+        Vector2 playerPos = GetPlayerPosition();
+        float dx = playerPos.x - rb2D.position.x;
+        float dy = playerPos.y - rb2D.position.y;
 
         if (primary.x != 0)
             return new Vector2(0f, Mathf.Sign(dy)); // was horizontal → try vertical
