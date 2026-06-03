@@ -102,7 +102,7 @@ public class EnemyAI : MonoBehaviour
 
             if (altWallHit != null)
             {
-                Debug.Log("Enemy movement blocked on both axes, si waiting.");
+                Debug.Log("Enemy movement blocked on both axes, so waiting.");
                 return;
             }
 
