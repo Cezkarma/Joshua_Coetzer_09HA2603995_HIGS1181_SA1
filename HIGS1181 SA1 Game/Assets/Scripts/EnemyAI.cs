@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -40,6 +41,10 @@ public class EnemyAI : MonoBehaviour
     public LayerMask blockingLayer; // Assign the Wall layer
     public LayerMask playerLayer;   // Assign the Player layer
 
+    [Header("UI")]
+    [Tooltip("Drag a child GameObject's TextMeshPro (non-UI) component here to show remaining HP.")]
+    public TextMeshPro hpLabel;
+
     // Cached component references (global to this class)
     private Rigidbody2D rb2D;
     private BoxCollider2D col2D;
@@ -72,6 +77,9 @@ public class EnemyAI : MonoBehaviour
         {
             Debug.LogWarning("EnemyAI: No GameObject tagged 'Player' found in scene.");
         }
+
+        // Show full HP on the label as soon as the enemy spawns
+        UpdateHPLabel();
     }
 
     // ── Turn Logic (MODIFIED) ────────────────────────────────
@@ -211,7 +219,7 @@ public class EnemyAI : MonoBehaviour
     }
 
     /// <summary>
-    /// Reduces this enemy's HP by the given amount.
+    /// Reduces this enemy's HP by the given amount and refreshes the HP label.
     /// Destroys the enemy and notifies the GameManager when HP reaches zero.
     /// Called by PlayerController.AttackEnemy().
     /// </summary>
@@ -220,12 +228,22 @@ public class EnemyAI : MonoBehaviour
         enemyHP -= damage;
         Debug.Log("Enemy took " + damage + " damage. HP remaining: " + enemyHP);
 
+        UpdateHPLabel();
+
         if (enemyHP <= 0)
         {
             Debug.Log("Player Defeated Enemy – enemy destroyed.");
             GameManager.instance.EnemyDefeated();
             Destroy(gameObject);
         }
+    }
+
+    // Writes the current HP value to the world-space label on this prefab.
+    // Does nothing if no label has been assigned in the Inspector.
+    private void UpdateHPLabel()
+    {
+        if (hpLabel != null)
+            hpLabel.text = enemyHP.ToString();
     }
 
     // ── Trigger Detection ────────────────────────────────────
